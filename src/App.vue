@@ -1,7 +1,11 @@
 <script setup>
-import { ref } from "vue";
-import { reactive } from "vue";
+import { ref, computed, watch } from "vue";
 
+// Constantes de configuration pour le localStorage
+const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
+const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
+
+// Données réactives
 const taches = ref([
   { id: 1, libelle: "texte de la tâche", terminee: false, ordre: 1 },
   { id: 2, libelle: "texte de la tâche 2", terminee: true, ordre: 2 },
@@ -12,13 +16,20 @@ const nouvelleTache = ref("");
 
 const triCritere = ref("manuel");
 
-const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
-const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
-
+// Initialisation depuis le localStorage
 const tachesStockees = localStorage.getItem(CLE_LOCALSTORAGE_TACHES);
 if (tachesStockees) {
   taches.value = JSON.parse(tachesStockees);
 }
+
+// Observateur pour sauvegarder automatiquement les tâches
+watch(
+  taches,
+  (newTaches) => {
+    localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(newTaches));
+  },
+  { deep: true }
+);
 
 const prochainIdStocke = localStorage.getItem(CLE_LOCALSTORAGE_PROCHAIN_ID);
 const prochainId = ref(
@@ -29,6 +40,12 @@ const prochainId = ref(
     : 1
 );
 
+// Observateur pour sauvegarder automatiquement le prochainId
+watch(prochainId, (newProchainId) => {
+  localStorage.setItem(CLE_LOCALSTORAGE_PROCHAIN_ID, String(newProchainId));
+});
+
+//Ajout de tâche
 function ajouterTache() {
   taches.value.push({
     id: prochainId.value,
@@ -39,114 +56,137 @@ function ajouterTache() {
 
   prochainId.value++;
   nouvelleTache.value = "";
-  appliquerTri();
-
-  localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(taches.value));
-  localStorage.setItem(
-    CLE_LOCALSTORAGE_PROCHAIN_ID,
-    prochainId.value.toString()
-  );
 }
 
+//Gestion des tâches
 function basculerTerminee(id) {
   const tache = taches.value.find((t) => t.id === id);
   if (tache) {
     tache.terminee = !tache.terminee;
   }
-
-  localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(taches.value));
 }
+
 function supprimerTache(id) {
   taches.value = taches.value.filter((t) => t.id !== id);
-
-  localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(taches.value));
 }
 
+//Gestion du tri manuel
 function monter(id) {
   if (triCritere.value !== "manuel") return;
 
-  const index = taches.value.findIndex((t) => t.id === id);
-  if (index > 0) {
-    const tacheAmonter = taches.value[index];
-    const tacheAuDessus = taches.value[index - 1];
-    const tempOrdre = tacheAmonter.ordre;
-    tacheAmonter.ordre = tacheAuDessus.ordre;
-    tacheAuDessus.ordre = tempOrdre;
-    appliquerTri();
+  const indexVisuel = tachesTriees.value.findIndex((t) => t.id === id);
+  if (indexVisuel > 0) {
+    const tacheAmonter = tachesTriees.value[indexVisuel];
+    const tacheAuDessus = tachesTriees.value[indexVisuel - 1];
 
-    localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(taches.value));
+    const tacheSourceAmonter = taches.value.find(
+      (t) => t.id === tacheAmonter.id
+    );
+    const tacheSourceAuDessus = taches.value.find(
+      (t) => t.id === tacheAuDessus.id
+    );
+
+    const tempOrdre = tacheSourceAmonter.ordre;
+    tacheSourceAmonter.ordre = tacheSourceAuDessus.ordre;
+    tacheSourceAuDessus.ordre = tempOrdre;
   }
 }
 
 function descendre(id) {
   if (triCritere.value !== "manuel") return;
-  const index = taches.value.findIndex((t) => t.id === id);
-  if (index < taches.value.length - 1) {
-    const tacheAdescendre = taches.value[index];
-    const tacheEnDessous = taches.value[index + 1];
-    const tempOrdre = tacheAdescendre.ordre;
-    tacheAdescendre.ordre = tacheEnDessous.ordre;
-    tacheEnDessous.ordre = tempOrdre;
-    appliquerTri();
 
-    localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(taches.value));
+  const indexVisuel = tachesTriees.value.findIndex((t) => t.id === id);
+  if (indexVisuel < tachesTriees.value.length - 1) {
+    const tacheAdescendre = tachesTriees.value[indexVisuel];
+    const tacheEnDessous = tachesTriees.value[indexVisuel + 1];
+
+    const tacheSourceAdescendre = taches.value.find(
+      (t) => t.id === tacheAdescendre.id
+    );
+    const tacheSourceEnDessous = taches.value.find(
+      (t) => t.id === tacheEnDessous.id
+    );
+
+    const tempOrdre = tacheSourceAdescendre.ordre;
+    tacheSourceAdescendre.ordre = tacheSourceEnDessous.ordre;
+    tacheSourceEnDessous.ordre = tempOrdre;
   }
 }
 
-function appliquerTri() {
+//Tri des tâches
+const tachesTriees = computed(() => {
   if (triCritere.value === "manuel") {
-    taches.value.sort((a, b) => a.ordre - b.ordre);
+    return taches.value.toSorted((a, b) => a.ordre - b.ordre);
   } else if (triCritere.value === "creation") {
-    taches.value.sort((a, b) => a.id - b.id);
+    return taches.value.toSorted((a, b) => a.id - b.id);
   } else if (triCritere.value === "libelleAsc") {
-    taches.value.sort((a, b) => a.libelle.localeCompare(b.libelle));
+    return taches.value.toSorted((a, b) => a.libelle.localeCompare(b.libelle));
   } else if (triCritere.value === "libelleDesc") {
-    taches.value.sort((a, b) => b.libelle.localeCompare(a.libelle));
+    return taches.value.toSorted((a, b) => b.libelle.localeCompare(a.libelle));
   } else if (triCritere.value === "terminee") {
-    taches.value.sort((a, b) => {
+    return taches.value.toSorted((a, b) => {
       if (a.terminee === b.terminee) {
         return a.libelle.localeCompare(b.libelle);
       }
       return a.terminee - b.terminee;
     });
   }
-}
+  return taches.value;
+});
+
+//Gestion du tri manuel
+const peutUtiliserTriManuel = computed(() => {
+  if (triCritere.value === "manuel") {
+    return true;
+  } else {
+    return false;
+  }
+});
+
+//Statistiques
+const nombreTotalTaches = computed(() => taches.value.length);
+
+const nombreTachesTerminees = computed(
+  () => taches.value.filter((t) => t.terminee).length
+);
+
+//Affichage conditionnel
+const aDesTaches = computed(() => {
+  if (taches.value.length > 0) {
+    return true;
+  } else {
+    return false;
+  }
+});
 </script>
 
 <template>
   <div class="container">
     <h2>Todolist Nathan You-Hout</h2>
 
-    <form>
+    <form @submit.prevent="ajouterTache">
       <input v-model="nouvelleTache" type="text" placeholder="Nouvelle tâche" />
-      <button
-        type="button"
-        @click="ajouterTache"
-        :disabled="nouvelleTache === ''"
-      >
-        Ajouter
-      </button>
+      <button type="submit" :disabled="nouvelleTache === ''">Ajouter</button>
     </form>
 
     <div class="ligne">
       <div>
         <label for="tri">Trier par :</label>
-        <select id="tri" v-model="triCritere" @change="appliquerTri">
+        <select id="tri" v-model="triCritere">
           <option value="manuel">Ordre personnalisé</option>
           <option value="creation">Ordre de création</option>
           <option value="libelleAsc">Libellé (A-Z)</option>
           <option value="libelleDesc">Libellé (Z-A)</option>
           <option value="terminee">Non terminées d'abord</option>
         </select>
-        <button type="button" @click="appliquerTri">Appliquer le tri</button>
       </div>
 
       <div>
         <p class="total">
-          Total : <span>{{ taches.length }}</span>
+          Total : <span>{{ nombreTotalTaches }}</span>
         </p>
         <p class="fini">
-          Terminées : <span>{{ taches.filter((t) => t.terminee).length }}</span>
+          Terminées : <span>{{ nombreTachesTerminees }}</span>
         </p>
       </div>
     </div>
@@ -154,21 +194,21 @@ function appliquerTri() {
       Les flèches ⬆ et ⬇ ne fonctionnent que si le tri est "Ordre personnalisé".
     </p>
 
-    <ul v-if="taches.length > 0">
-      <li v-for="tache in taches" :key="tache.id">
+    <ul v-if="aDesTaches">
+      <li v-for="tache in tachesTriees" :key="tache.id">
         <span :class="{ terminee: tache.terminee }">{{ tache.libelle }}</span>
 
         <button
           type="button"
           @click="monter(tache.id)"
-          :disabled="triCritere !== 'manuel'"
+          :disabled="!peutUtiliserTriManuel"
         >
           ⬆
         </button>
         <button
           type="button"
           @click="descendre(tache.id)"
-          :disabled="triCritere !== 'manuel'"
+          :disabled="!peutUtiliserTriManuel"
         >
           ⬇
         </button>
