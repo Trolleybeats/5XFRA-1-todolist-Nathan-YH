@@ -33,3 +33,13 @@ const emit = defineEmits([
     />
   </ul>
 </template>
+
+<style scoped>
+ul {
+  list-style-type: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+</style>

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import TodoList from "./components/TodoList.vue";
+import TodoForm from "./components/TodoForm.vue";
 
 // Constantes de configuration pour le localStorage
 const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
@@ -12,8 +13,6 @@ const taches = ref([
   { id: 2, libelle: "texte de la tâche 2", terminee: true, ordre: 2 },
   { id: 3, libelle: "texte de la tâche 3", terminee: false, ordre: 3 },
 ]);
-
-const nouvelleTache = ref("");
 
 const triCritere = ref("manuel");
 
@@ -47,16 +46,15 @@ watch(prochainId, (newProchainId) => {
 });
 
 //Ajout de tâche
-function ajouterTache() {
+function ajouterTache(texte) {
   taches.value.push({
     id: prochainId.value,
-    libelle: nouvelleTache.value,
+    libelle: texte,
     terminee: false,
     ordre: prochainId.value,
   });
 
   prochainId.value++;
-  nouvelleTache.value = "";
 }
 
 //Gestion des tâches
@@ -165,10 +163,10 @@ const aDesTaches = computed(() => {
   <div class="container">
     <h2>Todolist Nathan You-Hout</h2>
 
-    <form @submit.prevent="ajouterTache">
-      <input v-model="nouvelleTache" type="text" placeholder="Nouvelle tâche" />
-      <button type="submit" :disabled="nouvelleTache === ''">Ajouter</button>
-    </form>
+    <TodoForm
+      v-model:nouvelleTache="nouvelleTache"
+      @demanderAjoutTache="ajouterTache"
+    />
 
     <div class="ligne">
       <div>
@@ -233,43 +231,6 @@ h2 {
   font-weight: 600;
   text-align: center;
 }
-form {
-  display: flex;
-  flex-direction: row;
-  margin-bottom: 24px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-form input {
-  flex-grow: 2;
-  padding: 14px 16px;
-  font-size: 16px;
-  border: none;
-  outline: none;
-}
-form input::placeholder {
-  color: #aaa;
-}
-form button {
-  flex-grow: 1;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 600;
-  background: rgb(90, 90, 237);
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-form button:hover:enabled {
-  background: rgb(69, 115, 251);
-}
-form button:disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
-}
-
 label {
   font-weight: 500;
   color: #4b4b4b;
@@ -344,13 +305,6 @@ p.empty {
   color: #999;
   font-style: italic;
   padding: 32px;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
 }
 
 @media (max-width: 768px) {
