@@ -1,11 +1,7 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
 import TodoList from "./components/TodoList.vue";
 import TodoForm from "./components/TodoForm.vue";
-
-// Constantes de configuration pour le localStorage
-const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
-const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
 
 // Données réactives
 const taches = ref([
@@ -16,33 +12,44 @@ const taches = ref([
 
 const triCritere = ref("manuel");
 
-// Initialisation depuis le localStorage
-const tachesStockees = localStorage.getItem(CLE_LOCALSTORAGE_TACHES);
-if (tachesStockees) {
-  taches.value = JSON.parse(tachesStockees);
+function initialiserDepuisLocalStorage() {
+  // Constantes de configuration pour le localStorage
+  const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
+  const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
+
+  // Initialisation depuis le localStorage
+  const tachesStockees = localStorage.getItem(CLE_LOCALSTORAGE_TACHES);
+  if (tachesStockees) {
+    taches.value = JSON.parse(tachesStockees);
+  }
+
+  // Observateur pour sauvegarder automatiquement les tâches
+  watch(
+    taches,
+    (newTaches) => {
+      localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(newTaches));
+    },
+    { deep: true }
+  );
+
+  const prochainIdStocke = localStorage.getItem(CLE_LOCALSTORAGE_PROCHAIN_ID);
+  const prochainId = ref(
+    prochainIdStocke
+      ? parseInt(prochainIdStocke, 10)
+      : taches.value.length
+      ? Math.max(...taches.value.map((t) => t.id)) + 1
+      : 1
+  );
+
+  // Observateur pour sauvegarder automatiquement le prochainId
+  watch(prochainId, (newProchainId) => {
+    localStorage.setItem(CLE_LOCALSTORAGE_PROCHAIN_ID, String(newProchainId));
+  });
 }
 
-// Observateur pour sauvegarder automatiquement les tâches
-watch(
-  taches,
-  (newTaches) => {
-    localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(newTaches));
-  },
-  { deep: true }
-);
-
-const prochainIdStocke = localStorage.getItem(CLE_LOCALSTORAGE_PROCHAIN_ID);
-const prochainId = ref(
-  prochainIdStocke
-    ? parseInt(prochainIdStocke, 10)
-    : taches.value.length
-    ? Math.max(...taches.value.map((t) => t.id)) + 1
-    : 1
-);
-
-// Observateur pour sauvegarder automatiquement le prochainId
-watch(prochainId, (newProchainId) => {
-  localStorage.setItem(CLE_LOCALSTORAGE_PROCHAIN_ID, String(newProchainId));
+onMounted(() => {
+  console.log("[App] Composant monté, initialisation de la todoliste.");
+  initialiserDepuisLocalStorage();
 });
 
 //Ajout de tâche

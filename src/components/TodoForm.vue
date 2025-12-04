@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
+//Gestion composant
 const nouvelleTache = ref("");
 
 const emit = defineEmits(["demanderAjoutTache"]);
@@ -16,11 +17,25 @@ const gererSoumission = () => {
 
   nouvelleTache.value = "";
 };
+
+//Focus sur le champ de saisie
+const champSaisie = ref(null);
+
+onMounted(() => {
+  if (champSaisie.value !== null) {
+    champSaisie.value.focus();
+  }
+});
 </script>
 
 <template>
   <form @submit.prevent="gererSoumission">
-    <input v-model="nouvelleTache" type="text" placeholder="Nouvelle tâche" />
+    <input
+      v-model="nouvelleTache"
+      ref="champSaisie"
+      type="text"
+      placeholder="Nouvelle tâche"
+    />
     <button type="submit" :disabled="nouvelleTache === ''">Ajouter</button>
   </form>
 </template>
@@ -43,6 +58,9 @@ form input {
 }
 form input::placeholder {
   color: #aaa;
+}
+form input:focus {
+  font-weight: bold;
 }
 form button {
   flex-grow: 1;
