@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
+import TodoItem from "./components/TodoItem.vue";
 
 // Constantes de configuration pour le localStorage
 const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
@@ -195,28 +196,16 @@ const aDesTaches = computed(() => {
     </p>
 
     <ul v-if="aDesTaches">
-      <li v-for="tache in tachesTriees" :key="tache.id">
-        <span :class="{ terminee: tache.terminee }">{{ tache.libelle }}</span>
-
-        <button
-          type="button"
-          @click="monter(tache.id)"
-          :disabled="!peutUtiliserTriManuel"
-        >
-          ⬆
-        </button>
-        <button
-          type="button"
-          @click="descendre(tache.id)"
-          :disabled="!peutUtiliserTriManuel"
-        >
-          ⬇
-        </button>
-        <button type="button" @click="basculerTerminee(tache.id)">✔</button>
-        <button type="button" @click="supprimerTache(tache.id)">
-          🗑 Supprimer
-        </button>
-      </li>
+      <TodoItem
+        v-for="tache in tachesTriees"
+        :key="tache.id"
+        :tache="tache"
+        :peutUtiliserTriManuel="peutUtiliserTriManuel"
+        @monter="monter"
+        @descendre="descendre"
+        @basculerTerminee="basculerTerminee"
+        @supprimerTache="supprimerTache"
+      />
     </ul>
     <p v-else class="empty">Aucune tâche disponible.</p>
   </div>
@@ -366,55 +355,6 @@ ul {
   flex-direction: column;
   gap: 12px;
 }
-li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 12px;
-  background: white;
-  border: 2px solid #f0f0f0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s;
-}
-li:hover {
-  border-color: #667eea;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
-  transform: translateY(-2px);
-}
-li span {
-  flex: 1;
-  min-width: 0;
-  font-size: 16px;
-  color: #333;
-  padding-left: 4px;
-}
-span.terminee {
-  text-decoration: line-through;
-  color: #999;
-  opacity: 0.6;
-}
-button {
-  padding: 8px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  border-radius: 8px;
-  border: none;
-  background-color: #f5f5f5;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-button:hover:enabled {
-  background: #5a5aed;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
-}
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
 
 @media (max-width: 768px) {
   form {
@@ -427,10 +367,6 @@ button:disabled {
   .ligne > div:last-child {
     margin-left: 0;
     margin-top: 8px;
-  }
-
-  li {
-    padding: 10px;
   }
 }
 </style>
