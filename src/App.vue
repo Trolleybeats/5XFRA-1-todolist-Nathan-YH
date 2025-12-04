@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
-import TodoItem from "./components/TodoItem.vue";
+import TodoList from "./components/TodoList.vue";
 
 // Constantes de configuration pour le localStorage
 const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
@@ -195,18 +195,15 @@ const aDesTaches = computed(() => {
       Les flèches ⬆ et ⬇ ne fonctionnent que si le tri est "Ordre personnalisé".
     </p>
 
-    <ul v-if="aDesTaches">
-      <TodoItem
-        v-for="tache in tachesTriees"
-        :key="tache.id"
-        :tache="tache"
-        :peutUtiliserTriManuel="peutUtiliserTriManuel"
-        @monter="monter"
-        @descendre="descendre"
-        @basculerTerminee="basculerTerminee"
-        @supprimerTache="supprimerTache"
-      />
-    </ul>
+    <TodoList
+      v-if="aDesTaches"
+      :tachesTriees="tachesTriees"
+      :peutUtiliserTriManuel="peutUtiliserTriManuel"
+      @monter="monter"
+      @descendre="descendre"
+      @basculerTerminee="basculerTerminee"
+      @supprimerTache="supprimerTache"
+    />
     <p v-else class="empty">Aucune tâche disponible.</p>
   </div>
 </template>
