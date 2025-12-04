@@ -1,58 +1,34 @@
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from "vue";
+import { ref } from "vue";
 import TodoList from "./components/TodoList.vue";
 import TodoForm from "./components/TodoForm.vue";
+import { useTodolistLocalStorage } from "./composables/useTodolistLocalStorage.js";
+import { useTodolistStats } from "./composables/useTodolistStats.js";
+import { useTodolistTri } from "./composables/useTodolistTri.js";
+
+const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
+const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
 
 // Données réactives
-const taches = ref([
-  { id: 1, libelle: "texte de la tâche", terminee: false, ordre: 1 },
-  { id: 2, libelle: "texte de la tâche 2", terminee: true, ordre: 2 },
-  { id: 3, libelle: "texte de la tâche 3", terminee: false, ordre: 3 },
-]);
+const taches = ref([]);
 
+const prochainId = ref(1);
 const triCritere = ref("manuel");
 
-function initialiserDepuisLocalStorage() {
-  // Constantes de configuration pour le localStorage
-  const CLE_LOCALSTORAGE_TACHES = "todolist:taches";
-  const CLE_LOCALSTORAGE_PROCHAIN_ID = "todolist:prochainId";
-
-  // Initialisation depuis le localStorage
-  const tachesStockees = localStorage.getItem(CLE_LOCALSTORAGE_TACHES);
-  if (tachesStockees) {
-    taches.value = JSON.parse(tachesStockees);
-  }
-
-  // Observateur pour sauvegarder automatiquement les tâches
-  watch(
-    taches,
-    (newTaches) => {
-      localStorage.setItem(CLE_LOCALSTORAGE_TACHES, JSON.stringify(newTaches));
-    },
-    { deep: true }
-  );
-
-  const prochainIdStocke = localStorage.getItem(CLE_LOCALSTORAGE_PROCHAIN_ID);
-  const prochainId = ref(
-    prochainIdStocke
-      ? parseInt(prochainIdStocke, 10)
-      : taches.value.length
-      ? Math.max(...taches.value.map((t) => t.id)) + 1
-      : 1
-  );
-
-  // Observateur pour sauvegarder automatiquement le prochainId
-  watch(prochainId, (newProchainId) => {
-    localStorage.setItem(CLE_LOCALSTORAGE_PROCHAIN_ID, String(newProchainId));
-  });
-}
-
-onMounted(() => {
-  console.log("[App] Composant monté, initialisation de la todoliste.");
-  initialiserDepuisLocalStorage();
+useTodolistLocalStorage(taches, prochainId, {
+  cleTaches: CLE_LOCALSTORAGE_TACHES,
+  cleProchainId: CLE_LOCALSTORAGE_PROCHAIN_ID,
 });
 
-//Ajout de tâche
+const { nombreTotalTaches, nombreTachesTerminees, aDesTaches } =
+  useTodolistStats(taches);
+
+const { tachesTriees, peutUtiliserTriManuel } = useTodolistTri(
+  taches,
+  triCritere
+);
+
+//Gestion des tâches
 function ajouterTache(texte) {
   taches.value.push({
     id: prochainId.value,
@@ -64,7 +40,6 @@ function ajouterTache(texte) {
   prochainId.value++;
 }
 
-//Gestion des tâches
 function basculerTerminee(id) {
   const tache = taches.value.find((t) => t.id === id);
   if (tache) {
@@ -118,62 +93,13 @@ function descendre(id) {
     tacheSourceEnDessous.ordre = tempOrdre;
   }
 }
-
-//Tri des tâches
-const tachesTriees = computed(() => {
-  if (triCritere.value === "manuel") {
-    return taches.value.toSorted((a, b) => a.ordre - b.ordre);
-  } else if (triCritere.value === "creation") {
-    return taches.value.toSorted((a, b) => a.id - b.id);
-  } else if (triCritere.value === "libelleAsc") {
-    return taches.value.toSorted((a, b) => a.libelle.localeCompare(b.libelle));
-  } else if (triCritere.value === "libelleDesc") {
-    return taches.value.toSorted((a, b) => b.libelle.localeCompare(a.libelle));
-  } else if (triCritere.value === "terminee") {
-    return taches.value.toSorted((a, b) => {
-      if (a.terminee === b.terminee) {
-        return a.libelle.localeCompare(b.libelle);
-      }
-      return a.terminee - b.terminee;
-    });
-  }
-  return taches.value;
-});
-
-//Gestion du tri manuel
-const peutUtiliserTriManuel = computed(() => {
-  if (triCritere.value === "manuel") {
-    return true;
-  } else {
-    return false;
-  }
-});
-
-//Statistiques
-const nombreTotalTaches = computed(() => taches.value.length);
-
-const nombreTachesTerminees = computed(
-  () => taches.value.filter((t) => t.terminee).length
-);
-
-//Affichage conditionnel
-const aDesTaches = computed(() => {
-  if (taches.value.length > 0) {
-    return true;
-  } else {
-    return false;
-  }
-});
 </script>
 
 <template>
   <div class="container">
     <h2>Todolist Nathan You-Hout</h2>
 
-    <TodoForm
-      v-model:nouvelleTache="nouvelleTache"
-      @demanderAjoutTache="ajouterTache"
-    />
+    <TodoForm @demanderAjoutTache="ajouterTache" />
 
     <div class="ligne">
       <div>
