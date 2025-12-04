@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import TodoList from "./components/TodoList.vue";
 import TodoForm from "./components/TodoForm.vue";
+import TodoTri from "./components/TodoTri.vue";
 import { useTodolistLocalStorage } from "./composables/useTodolistLocalStorage.js";
 import { useTodolistStats } from "./composables/useTodolistStats.js";
 import { useTodolistTri } from "./composables/useTodolistTri.js";
@@ -101,27 +102,12 @@ function descendre(id) {
 
     <TodoForm @demanderAjoutTache="ajouterTache" />
 
-    <div class="ligne">
-      <div>
-        <label for="tri">Trier par :</label>
-        <select id="tri" v-model="triCritere">
-          <option value="manuel">Ordre personnalisé</option>
-          <option value="creation">Ordre de création</option>
-          <option value="libelleAsc">Libellé (A-Z)</option>
-          <option value="libelleDesc">Libellé (Z-A)</option>
-          <option value="terminee">Non terminées d'abord</option>
-        </select>
-      </div>
-
-      <div>
-        <p class="total">
-          Total : <span>{{ nombreTotalTaches }}</span>
-        </p>
-        <p class="fini">
-          Terminées : <span>{{ nombreTachesTerminees }}</span>
-        </p>
-      </div>
-    </div>
+    <TodoTri
+      :triCritere="triCritere"
+      :nombreTotalTaches="nombreTotalTaches"
+      :nombreTachesTerminees="nombreTachesTerminees"
+      @changerTri="triCritere = $event"
+    />
     <p>
       Les flèches ⬆ et ⬇ ne fonctionnent que si le tri est "Ordre personnalisé".
     </p>
@@ -164,93 +150,10 @@ h2 {
   font-weight: 600;
   text-align: center;
 }
-label {
-  font-weight: 500;
-  color: #4b4b4b;
-}
-select {
-  margin-left: 8px;
-  margin-right: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 2px solid #e0e0e0;
-  background: white;
-  font-size: 14px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.3s;
-}
-select:hover {
-  border-color: rgb(90, 90, 237);
-}
-.ligne {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-}
-.ligne > div:first-child {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.ligne > div:last-child {
-  display: flex;
-  gap: 12px;
-  margin-left: auto;
-}
-.ligne p {
-  margin: 0;
-  padding: 10px 18px;
-  border-radius: 24px;
-  font-weight: 500;
-  font-size: 14px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.ligne p.total {
-  background: rgb(90, 90, 237);
-  color: white;
-}
-.ligne p.fini {
-  background: #96bf36;
-  color: white;
-}
-.ligne p span {
-  font-weight: 700;
-  font-size: 17px;
-  margin-left: 4px;
-}
-.ligne button {
-  background: rgb(90, 90, 237);
-  color: #f5f5f5;
-  padding: 8px 16px;
-  font-weight: 500;
-}
-.ligne button:hover:enabled {
-  background: rgb(104, 104, 255);
-}
 p.empty {
   text-align: center;
   color: #999;
   font-style: italic;
   padding: 32px;
-}
-
-@media (max-width: 768px) {
-  form {
-    flex-direction: column;
-  }
-  form button {
-    width: 100%;
-    margin-top: 8px;
-  }
-  .ligne > div:last-child {
-    margin-left: 0;
-    margin-top: 8px;
-  }
 }
 </style>
